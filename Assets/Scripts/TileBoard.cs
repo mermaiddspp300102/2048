@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +11,9 @@ public class TileBoard : MonoBehaviour
     private List<Tile> tiles;
     private bool waiting;
 
+    private Vector2 touchStartPos;
+    private float swipeThreshold = 50f; 
+
     private void Awake()
     {
         grid = GetComponentInChildren<TileGrid>();
@@ -19,11 +22,13 @@ public class TileBoard : MonoBehaviour
 
     public void ClearBoard()
     {
-        foreach (var cell in grid.cells) {
+        foreach (var cell in grid.cells)
+        {
             cell.tile = null;
         }
 
-        foreach (var tile in tiles) {
+        foreach (var tile in tiles)
+        {
             Destroy(tile.gameObject);
         }
 
@@ -42,14 +47,45 @@ public class TileBoard : MonoBehaviour
     {
         if (!waiting)
         {
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) {
-                Move(Vector2Int.up, 0, 1, 1, 1);
-            } else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) {
-                Move(Vector2Int.left, 1, 1, 0, 1);
-            } else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) {
-                Move(Vector2Int.down, 0, 1, grid.Height - 2, -1);
-            } else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) {
-                Move(Vector2Int.right, grid.Width - 2, -1, 0, 1);
+            if (Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+
+                if (touch.phase == TouchPhase.Began)
+                {
+                    touchStartPos = touch.position;
+                }
+                else if (touch.phase == TouchPhase.Ended)
+                {
+                    Vector2 touchEndPos = touch.position;
+                    Vector2 swipe = touchEndPos - touchStartPos;
+
+                    if (swipe.magnitude >= swipeThreshold)
+                    {
+                        if (Mathf.Abs(swipe.x) > Mathf.Abs(swipe.y))
+                        {
+                            if (swipe.x > 0)
+                            {
+                                Move(Vector2Int.right, grid.Width - 2, -1, 0, 1);
+                            }
+                            else
+                            {
+                                Move(Vector2Int.left, 1, 1, 0, 1);
+                            }
+                        }
+                        else
+                        {
+                            if (swipe.y > 0)
+                            {
+                                Move(Vector2Int.up, 0, 1, 1, 1);
+                            }
+                            else
+                            {
+                                Move(Vector2Int.down, 0, 1, grid.Height - 2, -1);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -64,13 +100,15 @@ public class TileBoard : MonoBehaviour
             {
                 TileCell cell = grid.GetCell(x, y);
 
-                if (cell.Occupied) {
+                if (cell.Occupied)
+                {
                     changed |= MoveTile(cell.tile, direction);
                 }
             }
         }
 
-        if (changed) {
+        if (changed)
+        {
             StartCoroutine(WaitForChanges());
         }
     }
@@ -127,7 +165,8 @@ public class TileBoard : MonoBehaviour
     {
         for (int i = 0; i < tileStates.Length; i++)
         {
-            if (state == tileStates[i]) {
+            if (state == tileStates[i])
+            {
                 return i;
             }
         }
@@ -143,22 +182,26 @@ public class TileBoard : MonoBehaviour
 
         waiting = false;
 
-        foreach (var tile in tiles) {
+        foreach (var tile in tiles)
+        {
             tile.locked = false;
         }
 
-        if (tiles.Count != grid.Size) {
+        if (tiles.Count != grid.Size)
+        {
             CreateTile();
         }
 
-        if (CheckForGameOver()) {
+        if (CheckForGameOver())
+        {
             GameManager.Instance.GameOver();
         }
     }
 
     public bool CheckForGameOver()
     {
-        if (tiles.Count != grid.Size) {
+        if (tiles.Count != grid.Size)
+        {
             return false;
         }
 
@@ -169,24 +212,27 @@ public class TileBoard : MonoBehaviour
             TileCell left = grid.GetAdjacentCell(tile.cell, Vector2Int.left);
             TileCell right = grid.GetAdjacentCell(tile.cell, Vector2Int.right);
 
-            if (up != null && CanMerge(tile, up.tile)) {
+            if (up != null && CanMerge(tile, up.tile))
+            {
                 return false;
             }
 
-            if (down != null && CanMerge(tile, down.tile)) {
+            if (down != null && CanMerge(tile, down.tile))
+            {
                 return false;
             }
 
-            if (left != null && CanMerge(tile, left.tile)) {
+            if (left != null && CanMerge(tile, left.tile))
+            {
                 return false;
             }
 
-            if (right != null && CanMerge(tile, right.tile)) {
+            if (right != null && CanMerge(tile, right.tile))
+            {
                 return false;
             }
         }
 
         return true;
     }
-
 }
